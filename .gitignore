@@ -1,0 +1,33 @@
+# Local artifacts
+.DS_Store
+
+# Databases / runtime state
+/database/*.db
+/database/*.db-*
+/dump.rdb
+
+# Logs
+*.log
+/tmp/
+
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+
+# Build artifacts / archives
+*.zip
+
+# Runtime state
+dump.rdb
+
+# Python venv
+venv/
+
+# OpenClaw workspace noise
+.agents/
+.clawhub/
+

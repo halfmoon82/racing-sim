@@ -1,0 +1,198 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { gatewayClient, WebSocketMessage } from '../utils/gateway-ws';
+import { Bell, X, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+
+export interface GlobalCommand {
+  id?: string;
+  type: string;
+  title?: string;
+  message: string;
+  severity?: 'info' | 'warning' | 'success' | 'error';
+  timestamp?: string;
+  data?: any;
+}
+
+interface GlobalCommandProps {
+  /** 是否显示通知组件 */
+  showNotifications?: boolean;
+  /** 自定义命令处理器 */
+  onCommand?: (command: GlobalCommand) => void;
+  /** 权限级别: 'student' | 'teacher' | 'admin' */
+  userRole?: 'student' | 'teacher' | 'admin';
+}
+
+const GlobalCommandComponent: React.FC<GlobalCommandProps> = ({
+  showNotifications = true,
+  onCommand,
+  userRole = 'teacher'
+}) => {
+  const [isConnected, setIsConnected] = useState(false);
+  const [notifications, setNotifications] = useState<GlobalCommand[]>([]);
+  const [lastCommand, setLastCommand] = useState<GlobalCommand | null>(null);
+
+  // 处理接收到的全局命令
+  const handleGlobalCommand = useCallback((message: WebSocketMessage) => {
+    if (message.type !== 'global_command') return;
+    
+    const command: GlobalCommand = {
+      id: message.data?.id || Date.now().toString(),
+      type: message.data?.type || 'unknown',
+      title: message.data?.title,
+      message: message.data?.message || JSON.stringify(message.data),
+      severity: message.data?.severity || 'info',
+      timestamp: message.timestamp || new Date().toISOString(),
+      data: message.data
+    };
+
+    // 更新最后收到的命令
+    setLastCommand(command);
+
+    // 调用自定义处理器
+    if (onCommand) {
+      onCommand(command);
+    }
+
+    // 添加到通知列表
+    if (showNotifications) {
+      setNotifications((prev) => [command, ...prev].slice(0, 50)); // 最多保留50条
+    }
+  }, [onCommand, showNotifications]);
+
+  // 处理连接状态
+  const handleConnect = useCallback(() => {
+    setIsConnected(true);
+    console.log('[GlobalCommand] WebSocket connected');
+  }, []);
+
+  const handleDisconnect = useCallback(() => {
+    setIsConnected(false);
+    console.log('[GlobalCommand] WebSocket disconnected');
+  }, []);
+
+  // 初始化WebSocket连接 (Gateway)
+  useEffect(() => {
+    // 注册消息处理器
+    gatewayClient.on('global_command', handleGlobalCommand);
+    gatewayClient.on('connect', handleConnect);
+    gatewayClient.on('disconnect', handleDisconnect);
+    gatewayClient.on('*', (msg: WebSocketMessage) => {
+      console.log('[GlobalCommand] Received:', msg.type, msg);
+    });
+
+    // 建立连接 (Gateway WebSocket)
+    gatewayClient.connect()
+      .then(() => {
+        console.log('[GlobalCommand] Connected to Gateway');
+      })
+      .catch((err) => {
+        console.error('[GlobalCommand] Failed to connect to Gateway:', err);
+      });
+
+    // 清理
+    return () => {
+      gatewayClient.off('global_command', handleGlobalCommand);
+      gatewayClient.off('connect', handleConnect);
+      gatewayClient.off('disconnect', handleDisconnect);
+    };
+  }, [handleGlobalCommand, handleConnect, handleDisconnect, userRole]);
+
+  // 清除单条通知
+  const dismissNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  // 清除所有通知
+  const clearAll = () => {
+    setNotifications([]);
+  };
+
+  // 获取通知图标
+  const getSeverityIcon = (severity?: string) => {
+    switch (severity) {
+      case 'warning':
+        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      case 'error':
+        return <X className="w-5 h-5 text-red-500" />;
+      case 'success':
+        return <CheckCircle className="w-5 h-5 text-green-500" />;
+      default:
+        return <Info className="w-5 h-5 text-blue-500" />;
+    }
+  };
+
+  // 获取通知样式
+  const getSeverityStyle = (severity?: string): string => {
+    switch (severity) {
+      case 'warning':
+        return 'bg-yellow-50 border-yellow-200';
+      case 'error':
+        return 'bg-red-50 border-red-200';
+      case 'success':
+        return 'bg-green-50 border-green-200';
+      default:
+        return 'bg-blue-50 border-blue-200';
+    }
+  };
+
+  if (!showNotifications) {
+    return null;
+  }
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+      {/* 连接状态指示器 */}
+      <div className={`px-3 py-1 rounded-full text-xs flex items-center gap-1 ${
+        isConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+      }`}>
+        <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
+        {isConnected ? '已连接' : '未连接'}
+      </div>
+
+      {/* 通知列表 */}
+      {notifications.length > 0 && (
+        <div className="bg-white rounded-lg shadow-lg border border-gray-200 w-80 max-h-96 overflow-y-auto">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+            <span className="font-medium text-sm">通知 ({notifications.length})</span>
+            <button 
+              onClick={clearAll}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              清除全部
+            </button>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`p-3 ${getSeverityStyle(notification.severity)}`}
+              >
+                <div className="flex items-start gap-2">
+                  {getSeverityIcon(notification.severity)}
+                  <div className="flex-1 min-w-0">
+                    {notification.title && (
+                      <p className="font-medium text-sm text-gray-900">{notification.title}</p>
+                    )}
+                    <p className="text-sm text-gray-600">{notification.message}</p>
+                    {notification.timestamp && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(notification.timestamp).toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => notification.id && dismissNotification(notification.id)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default GlobalCommandComponent;

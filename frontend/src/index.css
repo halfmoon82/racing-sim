@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-0: #0a0b0d;
+  --bg-1: #121317;
+  --bg-2: #1a1c22;
+  --racing-red: #ff1e1e;
+  --racing-gold: #ffd700;
+  --racing-white: #ffffff;
+  --racing-gray: #a0a0a0;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  body {
+    @apply text-racing-white antialiased;
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 500px at 100% -10%, rgba(255,30,30,.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(255,215,0,.08), transparent 60%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.02) 0 2px, transparent 2px 8px),
+      linear-gradient(180deg, var(--bg-0), var(--bg-1) 42%, var(--bg-2));
+    font-family: "SF Pro Display", "PingFang SC", "Helvetica Neue", "Segoe UI", sans-serif;
+  }
+
+  h1,h2,h3,h4 {
+    letter-spacing: .2px;
+  }
+}
+
+@layer components {
+  .racing-shell {
+    @apply relative;
+  }
+
+  .racing-shell::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.02) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+    opacity: .18;
+    z-index: 0;
+  }
+
+  .racing-card {
+    @apply rounded-2xl p-5;
+    background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+    border: 1px solid rgba(255,255,255,.1);
+    box-shadow:
+      0 18px 40px rgba(0,0,0,.35),
+      inset 0 1px 0 rgba(255,255,255,.06);
+    backdrop-filter: blur(6px);
+  }
+
+  .racing-panel-title {
+    @apply text-white font-semibold;
+    text-shadow: 0 0 14px rgba(255,30,30,.35);
+  }
+
+  .racing-input {
+    @apply rounded-xl px-3 py-2 text-white;
+    border: 1px solid rgba(255,255,255,.14);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    outline: none;
+    transition: all .2s ease;
+  }
+
+  .racing-input:focus {
+    border-color: rgba(255,30,30,.9);
+    box-shadow: 0 0 0 3px rgba(255,30,30,.18);
+  }
+
+  .racing-btn {
+    @apply px-4 py-2 rounded-xl font-semibold;
+    transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  }
+
+  .racing-btn:active { transform: translateY(1px); }
+
+  .racing-btn-primary {
+    @apply racing-btn text-white;
+    background: linear-gradient(135deg, #ff1e1e, #c31313);
+    box-shadow: 0 10px 24px rgba(255,30,30,.35);
+  }
+  .racing-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(255,30,30,.42);
+  }
+
+  .racing-btn-secondary {
+    @apply racing-btn text-white;
+    background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.05));
+    border: 1px solid rgba(255,255,255,.14);
+  }
+
+  .racing-btn-gold {
+    @apply racing-btn text-black;
+    background: linear-gradient(135deg, #ffe37a, #ffd700 55%, #d5ad00);
+    box-shadow: 0 8px 20px rgba(255,215,0,.35);
+  }
+
+  .status-pill {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.06);
+  }
+
+  .telemetry-line {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,30,30,.7), transparent);
+    animation: dash 2.2s linear infinite;
+    background-size: 220px 2px;
+  }
+}
+
+@keyframes dash {
+  from { background-position: 0 0; }
+  to { background-position: 220px 0; }
+}

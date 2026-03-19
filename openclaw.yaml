@@ -1,0 +1,44 @@
+# OpenClaw Deployment Configuration
+# 商学院赛车策略仿真实验室
+
+name: racing-sim-lab
+version: 5.0.0
+description: 商学院赛车策略仿真实验室 - Business School Racing Simulation
+
+services:
+  backend:
+    type: python
+    command: cd ~/.openclaw/workspace/racing-sim/backend && uvicorn main:app --host 0.0.0.0 --port 8000
+    env:
+      - DATABASE_PATH=~/.openclaw/workspace/racing-sim/database/racing_sim.db
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+      - PHYSICS_ENGINE_PATH=~/Desktop/AI创新/RacingTJ_GDi_circle_4test.py
+    depends_on:
+      - redis
+    health_check:
+      endpoint: http://localhost:8000/api/health
+      interval: 30s
+
+  frontend:
+    type: static
+    path: ~/.openclaw/workspace/racing-sim/frontend/dist
+    port: 3000
+    build_command: cd ~/.openclaw/workspace/racing-sim/frontend && npm run build
+
+  redis:
+    type: service
+    command: redis-server --port 6379
+
+storage:
+  database:
+    path: ~/.openclaw/workspace/racing-sim/database
+    backup: daily
+  
+  temp:
+    path: /tmp/racing_sim
+    cleanup: hourly
+
+ports:
+  - 8000:backend
+  - 3000:frontend
